@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="Programmable interval timer for Tabata, circuit training, and running intervals.">
+  <meta name="theme-color" content="#ffffff">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <title>Interval Timer</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Setup View -->
+    <section id="setup-view" class="view active">
+      <header class="app-header">
+        <h1>Interval Timer</h1>
+        <p class="subtitle">Tabata · Circuit · Running</p>
+      </header>
+
+      <div class="card">
+        <label class="field-label" for="workout-name">Workout Name</label>
+        <input type="text" id="workout-name" placeholder="e.g. Morning Tabata" maxlength="60">
+
+        <div class="field-row">
+          <label class="field-label" for="rounds-count">Rounds</label>
+          <div class="stepper">
+            <button type="button" class="stepper-btn" id="rounds-decrease" aria-label="Decrease rounds">−</button>
+            <input type="number" id="rounds-count" value="8" min="1" max="99">
+            <button type="button" class="stepper-btn" id="rounds-increase" aria-label="Increase rounds">+</button>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <label class="field-label">Sound Alerts</label>
+          <label class="toggle">
+            <input type="checkbox" id="sound-enabled" checked>
+            <span class="toggle-slider"></span>
+            <span class="toggle-label">Final 3 seconds</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>Defaults</h2>
+        </div>
+        <div class="defaults-grid">
+          <div class="default-field">
+            <label class="field-label" for="default-work-seconds">Default Work (sec)</label>
+            <input type="number" id="default-work-seconds" value="20" min="1" max="3600">
+          </div>
+          <div class="default-field">
+            <label class="field-label" for="default-rest-seconds">Default Rest (sec)</label>
+            <input type="number" id="default-rest-seconds" value="10" min="1" max="3600">
+          </div>
+        </div>
+        <p class="hint">New exercises use these times. You can still change each interval individually.</p>
+      </div>
+
+      <div class="card" id="exercise-library-card" hidden>
+        <div class="card-header">
+          <h2>Previous Exercises</h2>
+        </div>
+        <p class="hint library-hint">Tap to quickly add an exercise from past workouts (includes rest).</p>
+        <div id="exercise-library" class="exercise-library"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>Intervals</h2>
+          <button type="button" class="btn btn-ghost btn-sm" id="add-interval">+ Add Exercise</button>
+        </div>
+        <div id="intervals-list" class="intervals-list"></div>
+        <p class="hint" id="total-duration"></p>
+      </div>
+
+      <div class="action-bar">
+        <button type="button" class="btn btn-primary btn-lg" id="start-workout">Start Workout</button>
+        <button type="button" class="btn btn-secondary" id="save-workout">Save Workout</button>
+        <button type="button" class="btn btn-secondary" id="share-workout">Share</button>
+      </div>
+
+      <div class="card" id="saved-section">
+        <div class="card-header">
+          <h2>Saved Workouts</h2>
+        </div>
+        <div id="saved-list" class="saved-list">
+          <p class="empty-state">No saved workouts yet.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Timer View -->
+    <section id="timer-view" class="view">
+      <div class="timer-display" id="timer-display">
+        <div class="timer-phase" id="timer-phase">WORK</div>
+        <div class="timer-clock" id="timer-clock">00:20</div>
+        <div class="timer-interval-name" id="timer-interval-name">Work</div>
+        <div class="timer-progress">
+          <span id="timer-round">Round 1/8</span>
+          <span class="dot">·</span>
+          <span id="timer-interval-index">Interval 1/2</span>
+        </div>
+      </div>
+
+      <div class="next-up-card" id="next-up-card" hidden>
+        <span class="next-up-label">Next up</span>
+        <span class="next-up-name" id="next-up-name">Rest</span>
+        <span class="next-up-duration" id="next-up-duration">10s</span>
+      </div>
+
+      <div class="interval-timeline" id="interval-timeline"></div>
+
+      <div class="timer-controls">
+        <button type="button" class="btn btn-secondary btn-lg" id="timer-restart">Restart</button>
+        <button type="button" class="btn btn-primary btn-xl" id="timer-play-pause">
+          <span id="play-pause-icon">▶</span>
+          <span id="play-pause-label">Start</span>
+        </button>
+        <button type="button" class="btn btn-secondary btn-lg" id="timer-stop">Exit</button>
+      </div>
+    </section>
+
+    <!-- Complete View -->
+    <section id="complete-view" class="view">
+      <div class="complete-content">
+        <div class="complete-icon">✓</div>
+        <h2>Workout Complete!</h2>
+        <p id="complete-summary"></p>
+        <div class="action-bar">
+          <button type="button" class="btn btn-primary btn-lg" id="complete-restart">Do Again</button>
+          <button type="button" class="btn btn-secondary btn-lg" id="complete-exit">Back to Setup</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Exercise Name Modal -->
+  <dialog id="exercise-modal" class="modal">
+    <div class="modal-content">
+      <h3>Add Exercise</h3>
+      <p>Enter a name for your new exercise.</p>
+      <label class="field-label" for="new-exercise-name">Exercise Name</label>
+      <input type="text" id="new-exercise-name" placeholder="e.g. Burpees" maxlength="40">
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" id="cancel-exercise-modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="confirm-exercise-modal">Add</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Share Modal -->
+  <dialog id="share-modal" class="modal">
+    <div class="modal-content">
+      <h3>Share Workout</h3>
+      <p>Copy this link to share your workout with friends.</p>
+      <div class="share-url-row">
+        <input type="text" id="share-url" readonly>
+        <button type="button" class="btn btn-primary" id="copy-share-url">Copy</button>
+      </div>
+      <button type="button" class="btn btn-ghost modal-close" id="close-share-modal">Close</button>
+    </div>
+  </dialog>
+
+  <!-- Toast -->
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
